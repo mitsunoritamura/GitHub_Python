@@ -17,9 +17,9 @@ file_path = filedialog.askopenfilename()
 # To get the file name, we can use os.path.basename
 file_name = os.path.basename(file_path)
 
-# Load the data, ignoring the first column (date-time)
-#dfini = pd.read_csv(file_path, usecols=[0,1], encoding='SHIFT-JIS').head(100)
-dfini = pd.read_csv(file_path, error_bad_lines=False, encoding='SHIFT-JIS').head(100)
+# Load the data from column0 and column1
+dfini = pd.read_csv(file_path, usecols=[0,1], encoding='SHIFT-JIS').head(100)
+#dfini = pd.read_csv(file_path, error_bad_lines=False, encoding='SHIFT-JIS').head(100)
 # Delete first column
 
 filtered_rows = dfini[dfini['#BeginHeader'].str.contains('#EndHeader', na=False)]#エラーを回避するためには、naパラメータを使用して、str.contains()がNaNを返す代わりに特定のBoolean値を返すように指定
@@ -37,8 +37,12 @@ print('Nofdata=')
 print(Nofdata)
 print(type(Nofdata))
 
+
+dfini2 = pd.read_csv(file_path, skiprows=34, nrows = 5,  encoding='SHIFT-JIS')
+print(dfini2)
+
 #Wavelogger内で付けられたチャンネル名を取得
-waveform_name_list = dfini[dfini.apply(lambda row: row.isin(['Waveform Name']).any(), axis=1)]
+waveform_name_list = dfini2[dfini2.apply(lambda row: row.isin(['Waveform Name']).any(), axis=1)]
 print(waveform_name_list)
 
 # 'CDG1000'の値がある列のインデックスを取得
@@ -51,14 +55,14 @@ print(CDG1000_index_number)
 # 'CDG10'の値がある列のインデックスを取得
 CDG10_index = waveform_name_list.columns[(waveform_name_list == 'CDG10').iloc[0]].tolist()
 print(CDG10_index)
-# 'CDG1000'の値がある列のインデックス番号を取得
+# 'CDG10'の値がある列のインデックス番号を取得
 CDG10_index_number = [waveform_name_list.columns.get_loc(col) for col in CDG10_index]
 print(CDG10_index_number)
 
 # 'CDG0.1'の値がある列のインデックスを取得
 CDG0_1_index = waveform_name_list.columns[(waveform_name_list == 'CDG0.1').iloc[0]].tolist()
 print(CDG0_1_index)
-# 'CDG1000'の値がある列のインデックス番号を取得
+# 'CDG0.1'の値がある列のインデックス番号を取得
 CDG0_1_index_number = [waveform_name_list.columns.get_loc(col) for col in CDG0_1_index]
 print(CDG0_1_index_number)
 
@@ -66,16 +70,17 @@ print(CDG0_1_index_number)
 #データ部分を読み込む
 # 0-indexedなので、2-4行目は1-3、10-20行目は9-19として指定
 #列名を'Waveform Name行から取得
-
 skip_rows = list(range(0, 35)) + list(range(36, 62))
 df = pd.read_csv(file_path, skiprows=skip_rows, nrows=Nofdata, encoding='SHIFT-JIS')#, engine='python')
 print(df)
 #print(df.head(100))
 
+
 CDG_lowest_press = 1500
 
 if not CDG1000_index:
     print("CDG1000_index is an empty list.")
+    P_CDG1000_2decades = np.array([]) #Making a List with size = 0 to avoid Name Error for not existing valuable
 else:
     print("CDG1000_index is not empty.")
     df.iloc[:,CDG1000_index_number] = df.iloc[:, CDG1000_index_number].apply(lambda x: (x*1000/10))
@@ -89,6 +94,7 @@ else:
 
 if not CDG10_index:
     print("CDG10_index is an empty list.")
+    P_CDG10_2decades = np.array([]) #Making a List with size = 0 to avoid Name Error for not existing valuable
 else:
     print("CDG10_index is not empty.")
     #df.iloc[:,CDG10_index_number] = df.iloc[:, CDG10_index_number].apply(lambda x: (x*10/10))  #Don't have to convert for 10T gauge
@@ -102,6 +108,7 @@ else:
 
 if not CDG0_1_index:
     print("CDG0.1_index is an empty list.")
+    P_CDG0_1_2decades = np.array([]) #Making a List with size = 0 to avoid Name Error for not existing valuable
 else:
     print("CDG0.1_index is not empty.")
     low_cut_value = 0.00010
@@ -124,17 +131,13 @@ else:
     else:
         if CDG1000_index:
             P_CDG_combined = np.array(P_CDG1000_2decades)
-            print("CDG10 pressure combined.")
+            print("CDG1000 pressure combined.")
         else:
             print("No CDG pressure combined.")
 
-
-if not P_CDG1000_2decades:
-    print("CDG1000_2decade is an empty list.")
-else:
-    if P_CDG_combined.size > 0:
+if P_CDG_combined.size > 0:
         if P_CDG10_2decades.size > 0:
-        P_CDG_combined = np.where(P_CDG_combined==0,P_CDG10_2decades,P_CDG_combined)
+            P_CDG_combined = np.where(P_CDG_combined==0,P_CDG10_2decades,P_CDG_combined)
         if P_CDG1000_2decades.size > 0:
             P_CDG_combined = np.where(P_CDG_combined==0,P_CDG1000_2decades,P_CDG_combined)
             P_CDG_combined = np.where(P_CDG_combined==-1,CDG_lowest_press,P_CDG_combined)
@@ -202,8 +205,8 @@ fig, ax = plt.subplots(figsize=(10, 6))
 cmapnum = []
 for i, key in enumerate(color_scheme.keys()):
     cmapnum.insert(i,i)
-#3列目以降の列数を取得
-for i, column in enumerate(df.columns[2:]):
+#2列目以降の列数を取得
+for i, column in enumerate(df.columns[1:]):
     maxindex = i
 
 #ガス種依存性分を補正する場合の係数とグラフタイトルに追加する文字を設定
@@ -275,7 +278,7 @@ for i, column in enumerate(df):
         marker = 'o'
         s = 3.0 
 
-    if i>2:
+    if i>1:
         x_values = df["Unnamed: 1"]
         y_values = df[column]
         ax.plot(x_values, y_values, color=color, marker=marker, markersize=s, label=column)
