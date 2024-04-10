@@ -135,9 +135,19 @@ else:
         else:
             print("No CDG pressure combined.")
 
+<<<<<<< HEAD
 if P_CDG_combined.size > 0:
         if P_CDG10_2decades.size > 0:
             P_CDG_combined = np.where(P_CDG_combined==0,P_CDG10_2decades,P_CDG_combined)
+=======
+
+if not P_CDG1000_2decades:
+    print("CDG1000_2decade is an empty list.")
+else:
+    if P_CDG_combined.size > 0:
+        if P_CDG10_2decades.size > 0:
+        P_CDG_combined = np.where(P_CDG_combined==0,P_CDG10_2decades,P_CDG_combined)
+>>>>>>> 38584bd7cde5ee09fa310941e9e7838150bf50ca
         if P_CDG1000_2decades.size > 0:
             P_CDG_combined = np.where(P_CDG_combined==0,P_CDG1000_2decades,P_CDG_combined)
             P_CDG_combined = np.where(P_CDG_combined==-1,CDG_lowest_press,P_CDG_combined)
